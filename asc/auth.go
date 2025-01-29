@@ -164,7 +164,7 @@ func (g *standardJWTGenerator) IsValid() bool {
 			if _, ok := token.Method.(*jwt.SigningMethodECDSA); !ok {
 				return nil, fmt.Errorf("Unexpected signing Method: %v", token.Header["alg"])
 			}
-			return []byte(g.rawPrivateKey), nil
+			return g.privateKey, nil
 		},
 		jwt.WithAudience(g.audience),
 		jwt.WithIssuer(g.issuerID),
@@ -172,6 +172,8 @@ func (g *standardJWTGenerator) IsValid() bool {
 	if err != nil {
 		return false
 	}
+
+	fmt.Println(parsed.Valid)
 
 	return parsed.Valid
 }
