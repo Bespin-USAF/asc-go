@@ -52,7 +52,7 @@ PURJWPQa24fI+wNPDi4OzjkB2g6fa5BHqam1gRlZHe8BU3+IjuC3AUFz
 -----END PRIVATE KEY-----		
 `)
 
-	token, err := NewTokenConfig("TEST", "TEST", 20*time.Minute, privPEMData)
+	token, err := NewTokenConfig("TEST", "TEST", 20*time.Minute, privPEMData, false)
 	assert.NoError(t, err)
 
 	tok, err := token.jwtGenerator.Token()
@@ -69,7 +69,7 @@ PURJWPQa24fI+wNPDi4OzjkB2g6fa5BHqam1gRlZHe8BU3+IjuC3AUFz
 func TestNewTokenConfigBadPEM(t *testing.T) {
 	t.Parallel()
 
-	_, err := NewTokenConfig("TEST", "TEST", 20*time.Minute, []byte("TEST"))
+	_, err := NewTokenConfig("TEST", "TEST", 20*time.Minute, []byte("TEST"), false)
 	assert.Error(t, err, "Expected error for invalid PEM, got nil")
 }
 
@@ -84,7 +84,7 @@ oH1YGuY57H3BQ3zLPVPsN+A8xnInGDa8yQ==
 -----END EC PRIVATE KEY-----
 `)
 
-	_, err := NewTokenConfig("TEST", "TEST", 20*time.Minute, badKey)
+	_, err := NewTokenConfig("TEST", "TEST", 20*time.Minute, badKey, false)
 	assert.Error(t, err, "Expected error for non-PKCS8 PEM, got nil")
 }
 

@@ -29,7 +29,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dgrijalva/jwt-go/v4"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 // ErrMissingPEM happens when the bytes cannot be decoded as a PEM block.
@@ -56,6 +56,7 @@ type standardJWTGenerator struct {
 	audience       string
 	expireDuration time.Duration
 	privateKey     *ecdsa.PrivateKey
+	rawPrivateKey  []byte
 
 	token string
 }
@@ -80,6 +81,7 @@ func NewTokenConfig(keyID string, issuerID string, expireDuration time.Duration,
 		issuerID:       issuerID,
 		audience:       audience,
 		privateKey:     key,
+		rawPrivateKey:  privateKey,
 		expireDuration: expireDuration,
 	}
 	_, err = gen.Token()
@@ -158,7 +160,12 @@ func (g *standardJWTGenerator) IsValid() bool {
 
 	parsed, err := jwt.Parse(
 		g.token,
-		jwt.KnownKeyfunc(jwt.SigningMethodES256, g.privateKey),
+		func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodECDSA); !ok {
+				return nil, fmt.Errorf("Unexpected signing Method: %v", token.Header["alg"])
+			}
+			return []byte(g.rawPrivateKey), nil
+		},
 		jwt.WithAudience(g.audience),
 		jwt.WithIssuer(g.issuerID),
 	)
@@ -172,10 +179,10 @@ func (g *standardJWTGenerator) IsValid() bool {
 func (g *standardJWTGenerator) claims() jwt.Claims {
 	expiry := time.Now().Add(g.expireDuration)
 
-	return jwt.StandardClaims{
+	return jwt.RegisteredClaims{
 		Audience:  jwt.ClaimStrings{g.audience},
 		Issuer:    g.issuerID,
-		ExpiresAt: jwt.At(expiry),
+		ExpiresAt: jwt.NewNumericDate(expiry),
 	}
 }
 
