@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 /**
@@ -70,7 +71,7 @@ func tokenConfig() *asc.AuthTransport {
 	issuerID := os.Getenv(envIssuerID)
 	expiryDuration := 20 * time.Minute
 	// Create the token using the required information
-	auth, err := asc.NewTokenConfig(keyID, issuerID, expiryDuration, privateKey)
+	auth, err := asc.NewTokenConfig(keyID, issuerID, expiryDuration, privateKey, false)
 	if err != nil {
 		fmt.Println(err)
 		return nil

@@ -53,6 +53,7 @@ type jwtGenerator interface {
 type standardJWTGenerator struct {
 	keyID          string
 	issuerID       string
+	audience       string
 	expireDuration time.Duration
 	privateKey     *ecdsa.PrivateKey
 
@@ -61,15 +62,23 @@ type standardJWTGenerator struct {
 
 // NewTokenConfig returns a new AuthTransport instance that customizes the Authentication header of the request during transport.
 // It can be customized further by supplying a custom http.RoundTripper instance to the Transport field.
-func NewTokenConfig(keyID string, issuerID string, expireDuration time.Duration, privateKey []byte) (*AuthTransport, error) {
+func NewTokenConfig(keyID string, issuerID string, expireDuration time.Duration, privateKey []byte, inHouse bool) (*AuthTransport, error) {
 	key, err := parsePrivateKey(privateKey)
 	if err != nil {
 		return nil, err
 	}
 
+	var audience string
+	if inHouse == false {
+		audience = "appstoreconnect-v1"
+	} else {
+		audience = "apple-developer-enterprise-v1"
+	}
+
 	gen := &standardJWTGenerator{
 		keyID:          keyID,
 		issuerID:       issuerID,
+		audience:       audience,
 		privateKey:     key,
 		expireDuration: expireDuration,
 	}
@@ -150,7 +159,7 @@ func (g *standardJWTGenerator) IsValid() bool {
 	parsed, err := jwt.Parse(
 		g.token,
 		jwt.KnownKeyfunc(jwt.SigningMethodES256, g.privateKey),
-		jwt.WithAudience("appstoreconnect-v1"),
+		jwt.WithAudience(g.audience),
 		jwt.WithIssuer(g.issuerID),
 	)
 	if err != nil {
@@ -164,7 +173,7 @@ func (g *standardJWTGenerator) claims() jwt.Claims {
 	expiry := time.Now().Add(g.expireDuration)
 
 	return jwt.StandardClaims{
-		Audience:  jwt.ClaimStrings{"appstoreconnect-v1"},
+		Audience:  jwt.ClaimStrings{g.audience},
 		Issuer:    g.issuerID,
 		ExpiresAt: jwt.At(expiry),
 	}
