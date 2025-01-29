@@ -170,10 +170,15 @@ func (g *standardJWTGenerator) IsValid() bool {
 		jwt.WithIssuer(g.issuerID),
 	)
 	if err != nil {
+		panic(err)
 		return false
 	}
 
 	fmt.Println(parsed.Valid)
+
+	if parsed.Valid == false {
+		panic("not valid")
+	}
 
 	return parsed.Valid
 }
