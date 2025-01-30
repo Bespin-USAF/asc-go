@@ -68,7 +68,7 @@ type Client struct {
 }
 
 // NewClient creates a new Client instance.
-func NewClient(httpClient *http.Client) *Client {
+func NewClient(httpClient *http.Client, ascURL string) *Client {
 	if httpClient == nil {
 		httpClient = &http.Client{
 			Transport: &http.Transport{
@@ -77,7 +77,10 @@ func NewClient(httpClient *http.Client) *Client {
 		}
 	}
 
-	baseURL, _ := url.Parse(defaultBaseURL)
+	if ascURL == "" {
+		ascURL = defaultBaseURL
+	}
+	baseURL, _ := url.Parse(ascURL)
 
 	c := &Client{
 		client:    httpClient,

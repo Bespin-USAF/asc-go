@@ -95,8 +95,9 @@ func TestAuthTransport(t *testing.T) {
 	transport := AuthTransport{
 		jwtGenerator: &mockJWTGenerator{token: token},
 	}
-	client := transport.Client()
+	client, url := transport.Client()
 
+	assert.Equal(t, url, "https://api.appstoreconnect.apple.com/")
 	req, _ := http.NewRequest("GET", "", nil)
 	_, _ = client.Do(req) // nolint: bodyclose
 
@@ -111,8 +112,9 @@ func TestAuthTransportCustomTransport(t *testing.T) {
 	transport := AuthTransport{
 		jwtGenerator: &mockJWTGenerator{token: token},
 	}
-	client := transport.Client()
+	client, url := transport.Client()
 
+	assert.Equal(t, url, "https://api.appstoreconnect.apple.com/")
 	req, _ := http.NewRequest("GET", "", nil) // nolint: noctx
 	_, _ = client.Do(req)                     // nolint: bodyclose
 
