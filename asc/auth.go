@@ -86,6 +86,7 @@ func NewTokenConfig(keyID string, issuerID string, expireDuration time.Duration,
 	return &AuthTransport{
 		Transport:    newTransport(),
 		jwtGenerator: gen,
+		inHouse:      inHouse,
 	}, err
 }
 
