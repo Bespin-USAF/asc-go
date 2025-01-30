@@ -97,7 +97,7 @@ func TestAuthTransport(t *testing.T) {
 	}
 	client, url := transport.Client()
 
-	assert.Equal(t, url, "https://api.appstoreconnect.apple.com/")
+	assert.Equal(t, url, "https://api.appstoreconnect.apple.com/v1/")
 	req, _ := http.NewRequest("GET", "", nil)
 	_, _ = client.Do(req) // nolint: bodyclose
 
@@ -114,7 +114,7 @@ func TestAuthTransportCustomTransport(t *testing.T) {
 	}
 	client, url := transport.Client()
 
-	assert.Equal(t, url, "https://api.appstoreconnect.apple.com/")
+	assert.Equal(t, url, "https://api.appstoreconnect.apple.com/v1/")
 	req, _ := http.NewRequest("GET", "", nil) // nolint: noctx
 	_, _ = client.Do(req)                     // nolint: bodyclose
 
