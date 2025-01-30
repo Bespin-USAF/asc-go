@@ -22,8 +22,6 @@ package asc
 
 import (
 	"crypto/ecdsa"
-	"crypto/x509"
-	"encoding/pem"
 	"errors"
 	"fmt"
 	"net/http"
@@ -56,7 +54,6 @@ type standardJWTGenerator struct {
 	audience       string
 	expireDuration time.Duration
 	privateKey     *ecdsa.PrivateKey
-	rawPrivateKey  []byte
 
 	token string
 }
@@ -64,7 +61,7 @@ type standardJWTGenerator struct {
 // NewTokenConfig returns a new AuthTransport instance that customizes the Authentication header of the request during transport.
 // It can be customized further by supplying a custom http.RoundTripper instance to the Transport field.
 func NewTokenConfig(keyID string, issuerID string, expireDuration time.Duration, privateKey []byte, inHouse bool) (*AuthTransport, error) {
-	key, err := parsePrivateKey(privateKey)
+	key, err := jwt.ParseECPrivateKeyFromPEM(privateKey)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +78,6 @@ func NewTokenConfig(keyID string, issuerID string, expireDuration time.Duration,
 		issuerID:       issuerID,
 		audience:       audience,
 		privateKey:     key,
-		rawPrivateKey:  privateKey,
 		expireDuration: expireDuration,
 	}
 	_, err = gen.Token()
@@ -90,24 +86,6 @@ func NewTokenConfig(keyID string, issuerID string, expireDuration time.Duration,
 		Transport:    newTransport(),
 		jwtGenerator: gen,
 	}, err
-}
-
-func parsePrivateKey(blob []byte) (*ecdsa.PrivateKey, error) {
-	block, _ := pem.Decode(blob)
-	if block == nil {
-		return nil, ErrMissingPEM
-	}
-
-	parsedKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
-	if err != nil {
-		return nil, err
-	}
-
-	if key, ok := parsedKey.(*ecdsa.PrivateKey); ok {
-		return key, nil
-	}
-
-	return nil, ErrInvalidPrivateKey
 }
 
 // RoundTrip implements the http.RoundTripper interface to set the Authorization header.
@@ -164,20 +142,14 @@ func (g *standardJWTGenerator) IsValid() bool {
 			if _, ok := token.Method.(*jwt.SigningMethodECDSA); !ok {
 				return nil, fmt.Errorf("Unexpected signing Method: %v", token.Header["alg"])
 			}
-			return g.privateKey, nil
+			return &g.privateKey.PublicKey, nil
 		},
 		jwt.WithAudience(g.audience),
 		jwt.WithIssuer(g.issuerID),
 	)
 	if err != nil {
-		panic(err)
+		fmt.Errorf("There was an error parsing token")
 		return false
-	}
-
-	fmt.Println(parsed.Valid)
-
-	if parsed.Valid == false {
-		panic("not valid")
 	}
 
 	return parsed.Valid

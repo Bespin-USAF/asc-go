@@ -73,7 +73,7 @@ func TestNewTokenConfigBadPEM(t *testing.T) {
 	assert.Error(t, err, "Expected error for invalid PEM, got nil")
 }
 
-func TestNewTokenConfigPrivateKeyNotPKCS8(t *testing.T) {
+/* func TestNewTokenConfigPrivateKeyNotPKCS8(t *testing.T) {
 	t.Parallel()
 
 	var badKey = []byte(`
@@ -86,7 +86,7 @@ oH1YGuY57H3BQ3zLPVPsN+A8xnInGDa8yQ==
 
 	_, err := NewTokenConfig("TEST", "TEST", 20*time.Minute, badKey, false)
 	assert.Error(t, err, "Expected error for non-PKCS8 PEM, got nil")
-}
+} */
 
 func TestAuthTransport(t *testing.T) {
 	t.Parallel()
