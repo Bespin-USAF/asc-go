@@ -41,6 +41,7 @@ var ErrInvalidPrivateKey = errors.New("key could not be parsed as a valid ecdsa.
 type AuthTransport struct {
 	Transport    http.RoundTripper
 	jwtGenerator jwtGenerator
+	inHouse      bool
 }
 
 type jwtGenerator interface {
@@ -101,8 +102,11 @@ func (t AuthTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 // Client returns a new http.Client instance for use with asc.Client.
-func (t *AuthTransport) Client() *http.Client {
-	return &http.Client{Transport: t}
+func (t *AuthTransport) Client() (*http.Client, string) {
+	if t.inHouse == false {
+		return &http.Client{Transport: t}, "https://api.appstoreconnect.apple.com/"
+	}
+	return &http.Client{Transport: t}, "https://api.enterprise.developer.apple.com/"
 }
 
 func (t *AuthTransport) transport() http.RoundTripper {

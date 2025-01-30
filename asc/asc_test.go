@@ -39,19 +39,19 @@ const marshaledMockPayload = `{"value":"TEST"}`
 func TestNewClient(t *testing.T) {
 	t.Parallel()
 
-	c := NewClient(nil)
+	c := NewClient(nil, "")
 
 	assert.Equal(t, defaultBaseURL, c.baseURL.String())
 	assert.Equal(t, userAgent, c.UserAgent)
 
-	c2 := NewClient(nil)
+	c2 := NewClient(nil, "")
 	assert.NotSame(t, c.client, c2.client, "NewClient returned same http.Clients, but they should differ")
 }
 
 func TestSetHTTPDebug(t *testing.T) {
 	t.Parallel()
 
-	client := NewClient(nil)
+	client := NewClient(nil, "")
 	client.SetHTTPDebug(true)
 	assert.True(t, client.httpDebug)
 	client.SetHTTPDebug(false)
@@ -281,7 +281,7 @@ func newServer(raw string, status int, addRateLimit bool) (*Client, *httptest.Se
 	}))
 
 	base, _ := url.Parse(server.URL)
-	client := NewClient(server.Client())
+	client := NewClient(server.Client(), "")
 	client.baseURL = base
 
 	return client, server
