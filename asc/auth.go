@@ -22,14 +22,12 @@ package asc
 
 import (
 	"crypto/ecdsa"
-	"crypto/x509"
-	"encoding/pem"
 	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/dgrijalva/jwt-go/v4"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 // ErrMissingPEM happens when the bytes cannot be decoded as a PEM block.
@@ -53,6 +51,7 @@ type jwtGenerator interface {
 type standardJWTGenerator struct {
 	keyID          string
 	issuerID       string
+	audience       string
 	expireDuration time.Duration
 	privateKey     *ecdsa.PrivateKey
 
@@ -61,15 +60,23 @@ type standardJWTGenerator struct {
 
 // NewTokenConfig returns a new AuthTransport instance that customizes the Authentication header of the request during transport.
 // It can be customized further by supplying a custom http.RoundTripper instance to the Transport field.
-func NewTokenConfig(keyID string, issuerID string, expireDuration time.Duration, privateKey []byte) (*AuthTransport, error) {
-	key, err := parsePrivateKey(privateKey)
+func NewTokenConfig(keyID string, issuerID string, expireDuration time.Duration, privateKey []byte, inHouse bool) (*AuthTransport, error) {
+	key, err := jwt.ParseECPrivateKeyFromPEM(privateKey)
 	if err != nil {
 		return nil, err
+	}
+
+	var audience string
+	if inHouse == false {
+		audience = "appstoreconnect-v1"
+	} else {
+		audience = "apple-developer-enterprise-v1"
 	}
 
 	gen := &standardJWTGenerator{
 		keyID:          keyID,
 		issuerID:       issuerID,
+		audience:       audience,
 		privateKey:     key,
 		expireDuration: expireDuration,
 	}
@@ -79,24 +86,6 @@ func NewTokenConfig(keyID string, issuerID string, expireDuration time.Duration,
 		Transport:    newTransport(),
 		jwtGenerator: gen,
 	}, err
-}
-
-func parsePrivateKey(blob []byte) (*ecdsa.PrivateKey, error) {
-	block, _ := pem.Decode(blob)
-	if block == nil {
-		return nil, ErrMissingPEM
-	}
-
-	parsedKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
-	if err != nil {
-		return nil, err
-	}
-
-	if key, ok := parsedKey.(*ecdsa.PrivateKey); ok {
-		return key, nil
-	}
-
-	return nil, ErrInvalidPrivateKey
 }
 
 // RoundTrip implements the http.RoundTripper interface to set the Authorization header.
@@ -149,11 +138,17 @@ func (g *standardJWTGenerator) IsValid() bool {
 
 	parsed, err := jwt.Parse(
 		g.token,
-		jwt.KnownKeyfunc(jwt.SigningMethodES256, g.privateKey),
-		jwt.WithAudience("appstoreconnect-v1"),
+		func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodECDSA); !ok {
+				return nil, fmt.Errorf("Unexpected signing Method: %v", token.Header["alg"])
+			}
+			return &g.privateKey.PublicKey, nil
+		},
+		jwt.WithAudience(g.audience),
 		jwt.WithIssuer(g.issuerID),
 	)
 	if err != nil {
+		fmt.Errorf("There was an error parsing token")
 		return false
 	}
 
@@ -163,10 +158,10 @@ func (g *standardJWTGenerator) IsValid() bool {
 func (g *standardJWTGenerator) claims() jwt.Claims {
 	expiry := time.Now().Add(g.expireDuration)
 
-	return jwt.StandardClaims{
-		Audience:  jwt.ClaimStrings{"appstoreconnect-v1"},
+	return jwt.RegisteredClaims{
+		Audience:  jwt.ClaimStrings{g.audience},
 		Issuer:    g.issuerID,
-		ExpiresAt: jwt.At(expiry),
+		ExpiresAt: jwt.NewNumericDate(expiry),
 	}
 }
 
