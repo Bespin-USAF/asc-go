@@ -97,7 +97,25 @@ func TestAuthTransport(t *testing.T) {
 	}
 	client, url := transport.Client()
 
-	assert.Equal(t, url, "https://api.appstoreconnect.apple.com/")
+	assert.Equal(t, url, "https://api.appstoreconnect.apple.com/v1/")
+	req, _ := http.NewRequest("GET", "", nil)
+	_, _ = client.Do(req) // nolint: bodyclose
+
+	got, want := req.Header.Get("Authorization"), fmt.Sprintf("Bearer %s", token)
+	assert.Equal(t, want, got)
+}
+
+func TestAuthTransportInHouse(t *testing.T) {
+	t.Parallel()
+
+	token := "TEST.TEST.TEST"
+	transport := AuthTransport{
+		jwtGenerator: &mockJWTGenerator{token: token},
+		inHouse:      true,
+	}
+	client, url := transport.Client()
+
+	assert.Equal(t, url, "https://api.enterprise.developer.apple.com/v1/")
 	req, _ := http.NewRequest("GET", "", nil)
 	_, _ = client.Do(req) // nolint: bodyclose
 
@@ -114,7 +132,25 @@ func TestAuthTransportCustomTransport(t *testing.T) {
 	}
 	client, url := transport.Client()
 
-	assert.Equal(t, url, "https://api.appstoreconnect.apple.com/")
+	assert.Equal(t, url, "https://api.appstoreconnect.apple.com/v1/")
+	req, _ := http.NewRequest("GET", "", nil) // nolint: noctx
+	_, _ = client.Do(req)                     // nolint: bodyclose
+
+	got, want := req.Header.Get("Authorization"), fmt.Sprintf("Bearer %s", token)
+	assert.Equal(t, want, got)
+}
+
+func TestAuthTransportCustomTransportInHouse(t *testing.T) {
+	t.Parallel()
+
+	token := "TEST.TEST.TEST"
+	transport := AuthTransport{
+		jwtGenerator: &mockJWTGenerator{token: token},
+		inHouse:      true,
+	}
+	client, url := transport.Client()
+
+	assert.Equal(t, url, "https://api.enterprise.developer.apple.com/v1/")
 	req, _ := http.NewRequest("GET", "", nil) // nolint: noctx
 	_, _ = client.Do(req)                     // nolint: bodyclose
 

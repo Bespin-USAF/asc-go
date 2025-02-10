@@ -86,6 +86,7 @@ func NewTokenConfig(keyID string, issuerID string, expireDuration time.Duration,
 	return &AuthTransport{
 		Transport:    newTransport(),
 		jwtGenerator: gen,
+		inHouse:      inHouse,
 	}, err
 }
 
@@ -104,9 +105,9 @@ func (t AuthTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 // Client returns a new http.Client instance for use with asc.Client.
 func (t *AuthTransport) Client() (*http.Client, string) {
 	if t.inHouse == false {
-		return &http.Client{Transport: t}, "https://api.appstoreconnect.apple.com/"
+		return &http.Client{Transport: t}, "https://api.appstoreconnect.apple.com/v1/"
 	}
-	return &http.Client{Transport: t}, "https://api.enterprise.developer.apple.com/"
+	return &http.Client{Transport: t}, "https://api.enterprise.developer.apple.com/v1/"
 }
 
 func (t *AuthTransport) transport() http.RoundTripper {
